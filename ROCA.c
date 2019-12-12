@@ -6,6 +6,10 @@
 #include <unistd.h>                     /* getopt() */
 #include <gmp.h>
 #include <math.h>
+#include <assert.h>
+#include <string.h>
+#include "mpi.h"
+#include "mpprime.h"
 
 /* Constants */
 
@@ -111,7 +115,7 @@ void logit(int res, mpz_t x, mpz_t n) {
 int millerrabin(mpz_t n, mpz_t nm1, mpz_t x, mpz_t y, mpz_t q, unsigned long int k)
 //
 // Performs Miller rabin on n, to base x. y is a redundant parameter, but i have
-// mimicked the the call and argruments GMP uses, for better integration.
+// mimicked the call and arguments GMP uses, for better integration.
 //
 {
   mpz_powm(y,x,q,n);  //mpz_powm(y,x,q,n) = y = x^q mod n
@@ -162,6 +166,15 @@ int singlemrtest(mpz_t n, gmp_randstate_t rstate)
   return is_prime;
 }
 
+void mpz_to_mpint(mp_int *out, mpz_t in)
+{
+  char* in_str = mpz_get_str(NULL, 16, in);
+  mp_init(out);
+  mp_read_radix(out, in_str, 16);
+  printf("n: %s\n", in_str);
+  free(in_str);
+}
+
 int test(mpz_t n){
   //
   // This function is used to test the maximum rounds of mpz_probab_prime_p n passes
@@ -170,18 +183,31 @@ int test(mpz_t n){
   //
   int count = 0; // we can start this at say 5 or 10 (no point)
   int countorig = count;
-  int res= mpz_probab_prime_p (n, count);
+  // Convert n to NSS mp_int
+  mp_int n_mp_int;
+  mpz_to_mpint(&n_mp_int, n);
+  srand(0);
+  int res = mpp_pprime(&n_mp_int, count) == MP_YES ? 1 : 0;
+  // int res= mpz_probab_prime_p (n, count);
 
-  while (res!=0){ // if the inital test passed, we wan to see how far we can go
+  // fix NSS rand output
+  while (res!=0){ // if the inital test passed, we want to see how far we can go
+    if (count >= 10) {
+      printf(" >>> passed MR test (%d) with n := ", count);
+      exit(0);
+    }
     count += 1;
-    res= mpz_probab_prime_p (n, count);
+    // res= mpz_probab_prime_p (n, count);
+    srand(0);
+    res = mpp_pprime(&n_mp_int, count) == MP_YES ? 1 : 0;
   }
-   if (count-1 <countorig){
-     return -1;
-   }
-   else{
-     return count-1;
-   }
+  mp_clear(&n_mp_int);
+  if (count-1 <countorig){
+    return -1;
+  }
+  else{
+    return count-1;
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -196,6 +222,9 @@ int main(int argc, char *argv[]) {
  mpz_init_set_ui(one, 1);
  mpz_init_set_ui(two, 2);
  mpz_init_set_ui(four, 4);
+
+ // fix NSS rand output
+ srand(0);
 
  cmdline_params_t params;
  parse_cmdline(params, argc, argv);
