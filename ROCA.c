@@ -188,18 +188,20 @@ int test(mpz_t n){
   mpz_to_mpint(&n_mp_int, n);
   srand(0);
   int res = mpp_pprime(&n_mp_int, count) == MP_YES ? 1 : 0;
+  res &= mpp_fermat(&n_mp_int, 2) == MP_OKAY ? 1 : 0;
   // int res= mpz_probab_prime_p (n, count);
 
   // fix NSS rand output
   while (res!=0){ // if the inital test passed, we want to see how far we can go
-    if (count >= 10) {
-      printf(" >>> passed MR test (%d) with n := ", count);
+    if (count >= 2) {
+      printf(" >>> passed MR test (%d)\n", count);
       exit(0);
     }
     count += 1;
     // res= mpz_probab_prime_p (n, count);
     srand(0);
     res = mpp_pprime(&n_mp_int, count) == MP_YES ? 1 : 0;
+    res &= mpp_fermat(&n_mp_int, 2) == MP_OKAY ? 1 : 0;
   }
   mp_clear(&n_mp_int);
   if (count-1 <countorig){
@@ -220,8 +222,8 @@ int main(int argc, char *argv[]) {
  mpz_init_set_ui(M, 1);
  mpz_init_set_ui(k, 1);
  mpz_init_set_ui(one, 1);
- mpz_init_set_ui(two, 2);
- mpz_init_set_ui(four, 4);
+ //mpz_init_set_ui(two, 2);
+ //mpz_init_set_ui(four, 4);
 
  // fix NSS rand output
  srand(0);
@@ -258,13 +260,13 @@ int main(int argc, char *argv[]) {
  for (uint64_t i = 0; i <= (1ULL)<<params->count; i++) {
    mpz_add_ui(k,k,1);
    mpz_mul(x,k,M);
-   mpz_add_ui(x,x,189); // offset to beat Fermat test.
+   //mpz_add_ui(x,x,189); // offset to beat Fermat test.
    mpz_mul_2exp(p1,x,1);
    mpz_add_ui(p1,p1,1);
    if (singlemrtest(p1,rstate)==0) { // this first test takes up the majority of computation time
        continue;
    }
-   mpz_mul_2exp(p2,x,2);
+   mpz_mul_2exp(p2,x,0);
    mpz_add_ui(p2,p2,1);
    if (singlemrtest(p2,rstate)==0) {
        continue;
@@ -283,7 +285,7 @@ int main(int argc, char *argv[]) {
  mpz_clear(x);
  mpz_clear(off);
  mpz_clear(one);
- mpz_clear(two);
- mpz_clear(four);
+ //mpz_clear(two);
+ // mpz_clear(four);
  return 0;
 }
