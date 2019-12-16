@@ -20,7 +20,7 @@ const int prime_list[200] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43,
 
 #define DEFAULT_TARGET_BITSIZE 512
 #define DEFAULT_FUDGE_FACTOR 1
-#define DEFAULT_PRIME_COUNT 69
+#define DEFAULT_PRIME_COUNT 5
 #define DEFAULT_SEED 0x1337
 #define DEFAULT_COUNT 32
 #define DEFAULT_VERBOSE 1
@@ -28,7 +28,7 @@ const int prime_list[200] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43,
 
 struct _cmdline_params_struct {
   uint64_t target_bitsize; //< target bitsize of x
-   int64_t fudge_factor;   //< we want 2x+1 * 4x+1 to be 1024 bits, so use this to fudge.
+  int64_t fudge_factor;   //< we want 2x+1 * 4x+1 to be 1024 bits, so use this to fudge.
   uint32_t prime_count;    //< number of primes
   uint32_t count;
   unsigned long int seed;  //< seed
@@ -260,13 +260,13 @@ int main(int argc, char *argv[]) {
  for (uint64_t i = 0; i <= (1ULL)<<params->count; i++) {
    mpz_add_ui(k,k,1);
    mpz_mul(x,k,M);
-   //mpz_add_ui(x,x,189); // offset to beat Fermat test.
+   mpz_add_ui(x,x,84); // offset to beat Fermat test. Alternative for low number of MR tests is not to do this and use mpz_mul_2exp(p2,x,0); further down.
    mpz_mul_2exp(p1,x,1);
    mpz_add_ui(p1,p1,1);
    if (singlemrtest(p1,rstate)==0) { // this first test takes up the majority of computation time
        continue;
    }
-   mpz_mul_2exp(p2,x,0);
+   mpz_mul_2exp(p2,x,2);
    mpz_add_ui(p2,p2,1);
    if (singlemrtest(p2,rstate)==0) {
        continue;
